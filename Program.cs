@@ -45,10 +45,13 @@ internal sealed class Program
             - university: string
 
             Hints:
-            - semester_count: look for Standard period of study (amount). For example: 3 semesters or 4 semesters.
-            - tuition_fee_eur: look for Tuition fees header, written as "Tuition fees 7,500.00 EUR / semester"
-            - admission_semester: look for text like "Admission only in the (season) trimester"
-            - city: look for location 
+            - semester_count: look for "Standard period of study (amount)", "Standard period of study", "Duration",
+              or "{N} semester(s)".
+            - tuition_fee_eur: look for "Tuition fees" or "Tuition fee". If "no tuition fees", use "0".
+            - admission_semester: look for "Admission semester" or "Admission only in the (season) trimester".
+              Map winter trimester/semester/term -> "winter only", summer trimester/semester/term -> "summer only".
+              If both winter and summer are listed, use "winter and summer".
+            - city: look for location.
 
             Page text:
             {{ $pageText }}

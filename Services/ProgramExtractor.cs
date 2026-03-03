@@ -49,12 +49,32 @@ internal sealed class ProgramExtractor
         {
             var semesterMatch = Regex.Match(
                 pageText,
-                @"(standard period of study|duration)\s*[:\-]?\s*(\d+)\s*(semester|semesters)\b",
+                @"standard period of study(?:\s*\(amount\))?\s*[:\-]?\s*(\d+)\s*(semester|semesters)\b",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-            if (semesterMatch.Success && int.TryParse(semesterMatch.Groups[2].Value, out var semesters))
+            if (!semesterMatch.Success)
             {
-                info.SemesterCount = Math.Max(0, semesters);
+                semesterMatch = Regex.Match(
+                    pageText,
+                    @"(duration|length of study)\s*[:\-]?\s*(\d+)\s*(semester|semesters)\b",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            }
+
+            if (!semesterMatch.Success)
+            {
+                semesterMatch = Regex.Match(
+                    pageText,
+                    @"(\d+)\s*(semester|semesters)\b\s*(standard period of study|duration|length of study)",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            }
+
+            if (semesterMatch.Success)
+            {
+                var numberGroup = semesterMatch.Groups[1].Success ? semesterMatch.Groups[1] : semesterMatch.Groups[2];
+                if (int.TryParse(numberGroup.Value, out var semesters))
+                {
+                    info.SemesterCount = Math.Max(0, semesters);
+                }
             }
         }
 
@@ -81,22 +101,60 @@ internal sealed class ProgramExtractor
 
         if (string.IsNullOrWhiteSpace(info.AdmissionSemester))
         {
-            var hasWinter = Regex.IsMatch(pageText, @"\bwinter semester\b|\bwinter term\b|\bWS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var hasSummer = Regex.IsMatch(pageText, @"\bsummer semester\b|\bsummer term\b|\bSS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var admissionMatch = Regex.Match(
+                pageText,
+                @"admission semester\s*[:\-]?\s*([A-Za-z\s]+)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-            if (hasWinter && hasSummer)
+            if (admissionMatch.Success)
             {
-                info.AdmissionSemester = "winter and summer";
+                var admissionText = admissionMatch.Groups[1].Value;
+                info.AdmissionSemester = NormalizeAdmissionSemester(admissionText);
             }
-            else if (hasWinter)
+            else
             {
-                info.AdmissionSemester = "winter only";
-            }
-            else if (hasSummer)
-            {
-                info.AdmissionSemester = "summer only";
+                var hasWinter = Regex.IsMatch(pageText, @"\bwinter semester\b|\bwinter term\b|\bwinter trimester\b|\bWS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                var hasSummer = Regex.IsMatch(pageText, @"\bsummer semester\b|\bsummer term\b|\bsummer trimester\b|\bSS\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+                if (hasWinter && hasSummer)
+                {
+                    info.AdmissionSemester = "winter and summer";
+                }
+                else if (hasWinter)
+                {
+                    info.AdmissionSemester = "winter only";
+                }
+                else if (hasSummer)
+                {
+                    info.AdmissionSemester = "summer only";
+                }
             }
         }
+    }
+
+    private static string NormalizeAdmissionSemester(string admissionText)
+    {
+        var text = admissionText.ToLowerInvariant();
+
+        var hasWinter = text.Contains("winter");
+        var hasSummer = text.Contains("summer");
+
+        if (hasWinter && hasSummer)
+        {
+            return "winter and summer";
+        }
+
+        if (hasWinter)
+        {
+            return "winter only";
+        }
+
+        if (hasSummer)
+        {
+            return "summer only";
+        }
+
+        return string.Empty;
     }
 
     private static string NormalizeAmount(string amount)
