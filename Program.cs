@@ -33,15 +33,22 @@ internal sealed class Program
 
         var extractor = kernel.CreateFunctionFromPrompt(
             """
-            You are extracting structured data from a DAAD program page.
+            You are extracting structured data from a university program page.
             Use ONLY the provided page text. If a value is missing, return an empty string.
+            Return ONLY a JSON object, no markdown, no backticks, no extra text.
 
             Output strict JSON with exactly these fields:
             - semester_count: non-negative integer
-            - tuition_fee_eur: price in EUR as a number string (no currency symbol, no semester fee). If none, "0".
+            - tuition_fee_eur: price as a number string (no currency symbol, no semester fee). If none, "0".
             - admission_semester: one of ["winter only","summer only","winter and summer"]
             - city: string
             - university: string
+
+            Hints:
+            - semester_count: look for Standard period of study (amount). For example: 3 semesters or 4 semesters.
+            - tuition_fee_eur: look for Tuition fees header, written as "Tuition fees 7,500.00 EUR / semester"
+            - admission_semester: look for text like "Admission only in the (season) trimester"
+            - city: look for location 
 
             Page text:
             {{ $pageText }}
