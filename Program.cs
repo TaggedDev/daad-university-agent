@@ -13,7 +13,7 @@ internal sealed class Program
     private const string DefaultSheetName = "Sheet1";
     
     [Experimental("SKEXP0010")]
-    private static async Task Main(string[] args)
+    private static async Task Main()
     {
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -32,7 +32,7 @@ internal sealed class Program
             .AddOpenAIChatCompletion(modelId: deepSeekModel, apiKey: deepSeekApiKey, endpoint: new Uri(deepSeekBase))
             .Build();
 
-        var extractor = kernel.CreateFunctionFromPrompt(
+        KernelFunction extractor = kernel.CreateFunctionFromPrompt(
             """
             You are extracting structured data from a university program page.
             Use ONLY the provided page text. If a value is missing, return an empty string.
@@ -65,7 +65,7 @@ internal sealed class Program
         var pageTextFetcher = new PageTextFetcher();
         var programExtractor = new ProgramExtractor();
 
-        var links = await sheetsRepository.ReadLinksAsync(sheetId, sheetName);
+        List<LinkRow> links = await sheetsRepository.ReadLinksAsync(sheetId, sheetName);
         if (links.Count == 0)
         {
             Console.WriteLine("No links found in column A.");
@@ -74,11 +74,8 @@ internal sealed class Program
 
         Console.WriteLine($"Found {links.Count} links. Processing...");
 
-        foreach (LinkRow link in links)
+        foreach (var link in links.Where(link => !string.IsNullOrWhiteSpace(link.Url)))
         {
-            if (string.IsNullOrWhiteSpace(link.Url))
-                continue;
-
             Console.WriteLine($"Row {link.Row}: {link.Url}");
 
             var pageText = await pageTextFetcher.FetchPageTextAsync(link.Url);
@@ -89,9 +86,12 @@ internal sealed class Program
             }
 
             ProgramInfo? result = await programExtractor.ExtractAsync(kernel, extractor, pageText);
-            if (result is null) 
+            if (result is null)
+            {
                 Console.WriteLine($"Row {link.Row}: failed to parse model.");
-
+                continue;
+            }
+            
             await sheetsRepository.WriteResultAsync(sheetId, sheetName, link.Row, result);
             Console.WriteLine("Processed first row; stopping for setup verification.");
         }
