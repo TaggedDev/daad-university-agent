@@ -49,15 +49,23 @@ internal sealed class ProgramExtractor
         {
             var semesterMatch = Regex.Match(
                 pageText,
-                @"standard period of study(?:\s*\(amount\))?\s*[:\-]?\s*(\d+)\s*(semester|semesters)\b",
-                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                @"standard period of study\s*\(amount\)\s*[:\-]?\s*.*?(\d+)\s*(semester|semesters)\b",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
 
             if (!semesterMatch.Success)
             {
                 semesterMatch = Regex.Match(
                     pageText,
-                    @"(duration|length of study)\s*[:\-]?\s*(\d+)\s*(semester|semesters)\b",
-                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                    @"(standard period of study)\s*[:\-]?\s*.*?(\d+)\s*(semester|semesters)\b",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+            }
+
+            if (!semesterMatch.Success)
+            {
+                semesterMatch = Regex.Match(
+                    pageText,
+                    @"(duration|length of study)\s*[:\-]?\s*.*?(\d+)\s*(semester|semesters)\b",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
             }
 
             if (!semesterMatch.Success)

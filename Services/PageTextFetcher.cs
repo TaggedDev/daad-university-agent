@@ -26,8 +26,16 @@ internal sealed class PageTextFetcher
             var parser = new HtmlParser();
             var document = await parser.ParseDocumentAsync(html);
 
+            var keyFacts = ExtractKeyFacts(document);
+
             var text = document.Body?.TextContent ?? string.Empty;
             text = NormalizeWhitespace(text);
+
+            if (keyFacts.Count > 0)
+            {
+                var keyFactsBlock = string.Join('\n', keyFacts);
+                text = $"{keyFactsBlock}\n{text}";
+            }
 
             if (text.Length > MaxContentChars)
             {
@@ -66,5 +74,26 @@ internal sealed class PageTextFetcher
         }
 
         return sb.ToString().Trim();
+    }
+
+    private static List<string> ExtractKeyFacts(AngleSharp.Dom.IDocument document)
+    {
+        var lines = new List<string>();
+        var items = document.QuerySelectorAll(".keyfact__item");
+        foreach (var item in items)
+        {
+            var label = item.QuerySelector("dt")?.TextContent ?? string.Empty;
+            var value = item.QuerySelector("dd")?.TextContent ?? string.Empty;
+
+            label = NormalizeWhitespace(label);
+            value = NormalizeWhitespace(value);
+
+            if (!string.IsNullOrWhiteSpace(label) && !string.IsNullOrWhiteSpace(value))
+            {
+                lines.Add($"{label}: {value}");
+            }
+        }
+
+        return lines;
     }
 }
