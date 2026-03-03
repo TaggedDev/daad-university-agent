@@ -23,9 +23,7 @@ internal sealed class SheetsRepository
 
         var links = new List<LinkRow>();
         if (response.Values is null)
-        {
             return links;
-        }
 
         for (var i = 0; i < response.Values.Count; i++)
         {

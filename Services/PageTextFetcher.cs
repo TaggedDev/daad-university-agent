@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 
 namespace GermanUniversityAgent.Services;
@@ -22,13 +23,13 @@ internal sealed class PageTextFetcher
             using var response = await Http.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
-            var html = await response.Content.ReadAsStringAsync();
-            var parser = new HtmlParser();
-            var document = await parser.ParseDocumentAsync(html);
+            string html = await response.Content.ReadAsStringAsync();
+            HtmlParser parser = new HtmlParser();
+            IHtmlDocument document = await parser.ParseDocumentAsync(html);
 
-            var keyFacts = ExtractKeyFacts(document);
+            List<string> keyFacts = ExtractKeyFacts(document);
 
-            var text = document.Body?.TextContent ?? string.Empty;
+            string text = document.Body?.TextContent ?? string.Empty;
             text = NormalizeWhitespace(text);
 
             if (keyFacts.Count > 0)
@@ -37,10 +38,8 @@ internal sealed class PageTextFetcher
                 text = $"{keyFactsBlock}\n{text}";
             }
 
-            if (text.Length > MaxContentChars)
-            {
+            if (text.Length > MaxContentChars) 
                 text = text[..MaxContentChars];
-            }
 
             return text;
         }
@@ -53,27 +52,27 @@ internal sealed class PageTextFetcher
 
     private static string NormalizeWhitespace(string input)
     {
-        var sb = new StringBuilder(input.Length);
+        var stringBuilder = new StringBuilder(input.Length);
         var wasWhite = false;
 
-        foreach (var ch in input)
+        foreach (char inputChar in input)
         {
-            if (char.IsWhiteSpace(ch))
+            if (char.IsWhiteSpace(inputChar))
             {
-                if (!wasWhite)
-                {
-                    sb.Append(' ');
-                    wasWhite = true;
-                }
+                if (wasWhite) 
+                    continue;
+                
+                stringBuilder.Append(' ');
+                wasWhite = true;
             }
             else
             {
-                sb.Append(ch);
+                stringBuilder.Append(inputChar);
                 wasWhite = false;
             }
         }
 
-        return sb.ToString().Trim();
+        return stringBuilder.ToString().Trim();
     }
 
     private static List<string> ExtractKeyFacts(AngleSharp.Dom.IDocument document)
@@ -82,16 +81,14 @@ internal sealed class PageTextFetcher
         var items = document.QuerySelectorAll(".keyfact__item");
         foreach (var item in items)
         {
-            var label = item.QuerySelector("dt")?.TextContent ?? string.Empty;
-            var value = item.QuerySelector("dd")?.TextContent ?? string.Empty;
+            string label = item.QuerySelector("dt")?.TextContent ?? string.Empty;
+            string value = item.QuerySelector("dd")?.TextContent ?? string.Empty;
 
             label = NormalizeWhitespace(label);
             value = NormalizeWhitespace(value);
 
-            if (!string.IsNullOrWhiteSpace(label) && !string.IsNullOrWhiteSpace(value))
-            {
+            if (!string.IsNullOrWhiteSpace(label) && !string.IsNullOrWhiteSpace(value)) 
                 lines.Add($"{label}: {value}");
-            }
         }
 
         return lines;

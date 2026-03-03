@@ -7,6 +7,9 @@ namespace GermanUniversityAgent.Services;
 
 internal static class GoogleSheetsServiceFactory
 {
+    private const int NoMatches = 0;
+    private const int TooManyMatches = 1;
+
     public static SheetsService BuildService(string credentialsPath)
     {
         var resolvedPath = ResolveCredentialsPath(credentialsPath);
@@ -51,31 +54,24 @@ internal static class GoogleSheetsServiceFactory
                 "Create a secrets folder at the project root and place a single *.json credential file there.");
         }
 
-        var matches = Directory.GetFiles(secretsDir, "*.json");
-        if (matches.Length == 0)
+        string[] matches = Directory.GetFiles(secretsDir, "*.json");
+        return matches.Length switch
         {
-            throw new InvalidOperationException("No *.json credentials found in secrets folder.");
-        }
-
-        if (matches.Length > 1)
-        {
-            throw new InvalidOperationException(
-                "Multiple *.json files found in secrets folder. Specify GoogleSheets:ApplicationCredentials explicitly.");
-        }
-
-        return matches[0];
+            NoMatches => throw new InvalidOperationException("No *.json credentials found in secrets folder."),
+            > TooManyMatches => throw new InvalidOperationException(
+                "Multiple *.json files found in secrets folder. Specify GoogleSheets:ApplicationCredentials explicitly."),
+            _ => matches[0]
+        };
     }
 
     private static bool IsServiceAccountJson(string path)
     {
         try
         {
-            using var stream = File.OpenRead(path);
-            using var doc = JsonDocument.Parse(stream);
+            using FileStream stream = File.OpenRead(path);
+            using JsonDocument doc = JsonDocument.Parse(stream);
             if (doc.RootElement.TryGetProperty("type", out var typeElement))
-            {
                 return string.Equals(typeElement.GetString(), "service_account", StringComparison.OrdinalIgnoreCase);
-            }
         }
         catch
         {

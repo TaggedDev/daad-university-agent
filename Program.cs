@@ -11,6 +11,7 @@ internal sealed class Program
 {
     private const string DefaultModel = "deepseek-chat";
     private const string DefaultSheetName = "Sheet1";
+    
     [Experimental("SKEXP0010")]
     private static async Task Main(string[] args)
     {
@@ -88,15 +89,11 @@ internal sealed class Program
             }
 
             ProgramInfo? result = await programExtractor.ExtractAsync(kernel, extractor, pageText);
-            if (result is null)
-            {
+            if (result is null) 
                 Console.WriteLine($"Row {link.Row}: failed to parse model.");
-                return;
-            }
 
             await sheetsRepository.WriteResultAsync(sheetId, sheetName, link.Row, result);
             Console.WriteLine("Processed first row; stopping for setup verification.");
-            return;
         }
 
         Console.WriteLine("Done.");
