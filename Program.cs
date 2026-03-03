@@ -11,6 +11,7 @@ internal sealed class Program
 {
     private const string DefaultModel = "deepseek-chat";
     private const string DefaultSheetName = "Sheet1";
+    private const int ProgressBarWidth = 30;
     
     [Experimental("SKEXP0010")]
     private static async Task Main()
@@ -72,30 +73,56 @@ internal sealed class Program
             return;
         }
 
-        Console.WriteLine($"Found {links.Count} links. Processing...");
-
-        foreach (var link in links.Where(link => !string.IsNullOrWhiteSpace(link.Url)))
+        var validLinks = links.Where(link => !string.IsNullOrWhiteSpace(link.Url)).ToList();
+        if (validLinks.Count == 0)
         {
-            Console.WriteLine($"Row {link.Row}: {link.Url}");
+            Console.WriteLine("No valid links found in column A.");
+            return;
+        }
+
+        foreach (var link in validLinks)
+        {
+            RenderProgress(validLinks, link.Row);
 
             var pageText = await pageTextFetcher.FetchPageTextAsync(link.Url);
             if (string.IsNullOrWhiteSpace(pageText))
-            {
-                Console.WriteLine($"Row {link.Row}: empty page text.");
                 continue;
-            }
 
             ProgramInfo? result = await programExtractor.ExtractAsync(kernel, extractor, pageText);
             if (result is null)
-            {
-                Console.WriteLine($"Row {link.Row}: failed to parse model.");
                 continue;
-            }
             
             await sheetsRepository.WriteResultAsync(sheetId, sheetName, link.Row, result);
-            Console.WriteLine("Processed first row; stopping for setup verification.");
         }
 
-        Console.WriteLine("Done.");
+        RenderProgressDone(validLinks.Count);
+    }
+
+    private static void RenderProgress(IReadOnlyList<LinkRow> validLinks, int currentRow)
+    {
+        var currentIndex = GetIndexByRow(validLinks, currentRow);
+        var progress = (double)currentIndex / validLinks.Count;
+        var filled = (int)(progress * ProgressBarWidth);
+        var bar = new string('#', filled).PadRight(ProgressBarWidth, '-');
+        Console.Write($"\r[{bar}] {currentIndex}/{validLinks.Count} (row {currentRow})");
+    }
+
+    private static void RenderProgressDone(int total)
+    {
+        var bar = new string('#', ProgressBarWidth);
+        Console.WriteLine($"\r[{bar}] {total}/{total} (done)");
+    }
+
+    private static int GetIndexByRow(IReadOnlyList<LinkRow> links, int row)
+    {
+        for (var i = 0; i < links.Count; i++)
+        {
+            if (links[i].Row == row)
+            {
+                return i + 1;
+            }
+        }
+
+        return 1;
     }
 }
