@@ -5,7 +5,7 @@ using Microsoft.SemanticKernel;
 
 namespace GermanUniversityAgent.Services;
 
-internal sealed class ProgramExtractor
+internal sealed class DAADProgramExtractor
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

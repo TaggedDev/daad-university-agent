@@ -5,7 +5,7 @@ using AngleSharp.Html.Parser;
 
 namespace GermanUniversityAgent.Services;
 
-internal sealed class PageTextFetcher
+internal sealed class DAADPageTextFetcher
 {
     private const int MaxContentChars = 12000;
 

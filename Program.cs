@@ -63,8 +63,8 @@ internal sealed class Program
         var credentialsPath = config["GoogleSheets:ApplicationCredentials"] ?? string.Empty;
         var sheetsService = GoogleSheetsServiceFactory.BuildService(credentialsPath);
         var sheetsRepository = new SheetsRepository(sheetsService);
-        var pageTextFetcher = new PageTextFetcher();
-        var programExtractor = new ProgramExtractor();
+        var pageTextFetcher = new DAADPageTextFetcher();
+        var programExtractor = new DAADProgramExtractor();
 
         List<LinkRow> links = await sheetsRepository.ReadLinksAsync(sheetId, sheetName);
         if (links.Count == 0)
