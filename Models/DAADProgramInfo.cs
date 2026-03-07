@@ -1,6 +1,6 @@
 namespace GermanUniversityAgent.Models;
 
-internal sealed class ProgramInfo
+internal sealed class DAADProgramInfo
 {
     public int SemesterCount { get; set; }
     public string? TuitionFeeEur { get; set; }

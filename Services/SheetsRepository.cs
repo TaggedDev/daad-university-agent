@@ -35,13 +35,36 @@ internal sealed class SheetsRepository
         return links;
     }
 
-    public async Task WriteResultAsync(string sheetId, string sheetName, int row, ProgramInfo info)
+    public async Task WriteResultAsync(string sheetId, string sheetName, int row, DAADProgramInfo info)
     {
         var range = $"{sheetName}!C{row}:G{row}";
         var values = new List<IList<object>>
         {
             new List<object>
             {
+                Math.Max(0, info.SemesterCount),
+                info.TuitionFeeEur ?? string.Empty,
+                info.AdmissionSemester ?? string.Empty,
+                info.City ?? string.Empty,
+                info.University ?? string.Empty
+            }
+        };
+
+        var body = new ValueRange { Values = values };
+        var request = _service.Spreadsheets.Values.Update(body, sheetId, range);
+        request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+        await request.ExecuteAsync();
+    }
+
+    public async Task WriteHSKResultAsync(string sheetId, string sheetName, int row, HSKProgramInfo info)
+    {
+        // B=ProgramName, C=SemesterCount, D=TuitionFeeEur, E=AdmissionSemester, F=City, G=University
+        var range = $"{sheetName}!B{row}:G{row}";
+        var values = new List<IList<object>>
+        {
+            new List<object>
+            {
+                info.ProgramName ?? string.Empty,
                 Math.Max(0, info.SemesterCount),
                 info.TuitionFeeEur ?? string.Empty,
                 info.AdmissionSemester ?? string.Empty,

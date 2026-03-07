@@ -33,38 +33,13 @@ internal sealed class Program
             .AddOpenAIChatCompletion(modelId: deepSeekModel, apiKey: deepSeekApiKey, endpoint: new Uri(deepSeekBase))
             .Build();
 
-        KernelFunction extractor = kernel.CreateFunctionFromPrompt(
-            """
-            You are extracting structured data from a university program page.
-            Use ONLY the provided page text. If a value is missing, return an empty string.
-            Return ONLY a JSON object, no markdown, no backticks, no extra text.
-
-            Output strict JSON with exactly these fields:
-            - semester_count: non-negative integer
-            - tuition_fee_eur: price as a number string (no currency symbol, no semester fee). If none, "0".
-            - admission_semester: one of ["winter only","summer only","winter and summer"]
-            - city: string
-            - university: string
-
-            Hints:
-            - semester_count: look for "Standard period of study (amount)", "Standard period of study", "Duration",
-              or "{N} semester(s)".
-            - tuition_fee_eur: look for "Tuition fees" or "Tuition fee". If "no tuition fees", use "0".
-            - admission_semester: look for "Admission semester" or "Admission only in the (season) trimester".
-              Map winter trimester/semester/term -> "winter only", summer trimester/semester/term -> "summer only".
-              If both winter and summer are listed, use "winter and summer".
-            - city: look for location.
-
-            Page text:
-            {{ $pageText }}
-            """
-        );
+        KernelFunction extractor = HSKProgramExtractor.CreateExtractionFunction(kernel);
 
         var credentialsPath = config["GoogleSheets:ApplicationCredentials"] ?? string.Empty;
         var sheetsService = GoogleSheetsServiceFactory.BuildService(credentialsPath);
         var sheetsRepository = new SheetsRepository(sheetsService);
-        var pageTextFetcher = new DAADPageTextFetcher();
-        var programExtractor = new DAADProgramExtractor();
+        var pageTextFetcher = new HSKPageTextFetcher();
+        var programExtractor = new HSKProgramExtractor();
 
         List<LinkRow> links = await sheetsRepository.ReadLinksAsync(sheetId, sheetName);
         if (links.Count == 0)
@@ -88,11 +63,11 @@ internal sealed class Program
             if (string.IsNullOrWhiteSpace(pageText))
                 continue;
 
-            ProgramInfo? result = await programExtractor.ExtractAsync(kernel, extractor, pageText);
+            HSKProgramInfo? result = await programExtractor.ExtractAsync(kernel, extractor, pageText);
             if (result is null)
                 continue;
-            
-            await sheetsRepository.WriteResultAsync(sheetId, sheetName, link.Row, result);
+
+            await sheetsRepository.WriteHSKResultAsync(sheetId, sheetName, link.Row, result);
         }
 
         RenderProgressDone(validLinks.Count);

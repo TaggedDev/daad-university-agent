@@ -12,7 +12,7 @@ internal sealed class DAADProgramExtractor
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<ProgramInfo?> ExtractAsync(Kernel kernel, KernelFunction function, string pageText)
+    public async Task<DAADProgramInfo?> ExtractAsync(Kernel kernel, KernelFunction function, string pageText)
     {
         try
         {
@@ -27,7 +27,7 @@ internal sealed class DAADProgramExtractor
                 return null;
             }
 
-            var info = JsonSerializer.Deserialize<ProgramInfo>(json, JsonOptions);
+            var info = JsonSerializer.Deserialize<DAADProgramInfo>(json, JsonOptions);
             if (info is null)
             {
                 return null;
@@ -43,7 +43,7 @@ internal sealed class DAADProgramExtractor
         }
     }
 
-    private static void EnrichFromText(ProgramInfo info, string pageText)
+    private static void EnrichFromText(DAADProgramInfo info, string pageText)
     {
         if (info.SemesterCount <= 0)
         {
