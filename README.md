@@ -1,3 +1,5 @@
+[![AI Slop Inside](https://sladge.net/badge.svg)](https://sladge.net)
+
 # GermanUniversityAgent
 
 Small console app that scrapes DAAD program pages and writes structured study program data into Google Sheets.
